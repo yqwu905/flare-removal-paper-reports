@@ -2,6 +2,7 @@
 
 > **发表**：AAAI 2026　|　**作者**：Xiyu Zhu et al.（武汉科技大学）
 > **论文**：https://arxiv.org/abs/2512.15221　|　**代码**：未开源
+> **数据合成管线复现**（本仓库自建工程）：[`reproductions/SLCFormer_ZernikeVAE/`](reproductions/SLCFormer_ZernikeVAE/) —— 从零实现 ZernikeVAE 散射眩光合成管线（Eq.1–6 + Phase-to-Space + VAE），含物理自检与 Fig.1 复现。
 
 ## 一、解决的问题
 

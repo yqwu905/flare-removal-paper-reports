@@ -1,0 +1,5 @@
+# Regenerable artifacts (rebuild via scripts/) — keep PNG visualizations only.
+*.pt
+*.npz
+__pycache__/
+*.pyc

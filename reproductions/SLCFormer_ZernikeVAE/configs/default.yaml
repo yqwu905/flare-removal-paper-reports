@@ -1,0 +1,58 @@
+# Default configuration for the ZernikeVAE scatter-flare synthesis pipeline.
+# Mirrors the dataclasses in zvflare/{optics,synth,compositing,vae}.py.
+
+optics:
+  pupil_size: 96          # pupil-plane sampling (NxN)
+  psf_size: 64            # cropped PSF kernel size
+  oversample: 2           # zero-pad factor for the pupil FFT (PSF sampling)
+  num_zernike: 18         # Zernike modes, Noll j = 2 .. 19 (skip piston)
+  phase_scale: 6.2831853  # 2*pi : coefficient -> radians (Eq.4)
+  aperture: circular      # circular | gaussian-apodized
+  chromatic: true         # render an RGB PSF (chromatic dispersion)
+  ref_wavelength_nm: 540.0
+  wavelengths_nm: [610.0, 540.0, 465.0]
+
+synth:
+  image_size: 256
+  backend: sources        # sources (exact, sparse) | direct (tiled)
+  field_grid: [6, 6]      # control-grid resolution of the Zernike field
+  field_strength: 0.4     # RMS aberration strength
+  field_smooth: 1.0       # spatial smoothing of the coefficient field
+  tile: 64                # tile size for the 'direct' backend
+  overlap: 0.5
+  n_light_sources: 5
+  flare_gain: 6.0
+  descriptor_zernike_modes: 4
+
+augment:                  # Flare7K++-style flare augmentation
+  gamma_range: [1.8, 2.2]
+  rgb_gain_range: [0.5, 1.2]
+  global_gain_range: [0.5, 1.5]
+  rotate_deg: 180.0
+  scale_range: [0.7, 1.5]
+  shear_deg: 10.0
+  translate_frac: 0.15
+  blur_sigma_range: [0.0, 2.0]
+  noise_std: 0.01
+  dc_offset_range: [0.0, 0.02]
+
+p2s:
+  num_basis: 80           # PCA spatial basis kernels (Eq.6)
+  num_samples: 2500       # PSF dictionary size
+  strength: 0.3
+  poly_degree: 3          # alpha -> beta regressor feature degree
+
+vae:
+  in_channels: 8          # 3 flare RGB + 4 Zernike maps + 1 kernel-size map
+  out_channels: 3
+  base: 24
+  latent_dim: 96
+  img_size: 128
+  depth: 4
+  kl_weight: 0.001
+
+train:
+  steps: 400
+  batch: 8
+  lr: 0.0001              # paper: 1e-4, Adam (0.9, 0.99), MultiStepLR x0.5 @200k
+  betas: [0.9, 0.99]
