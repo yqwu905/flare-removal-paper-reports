@@ -38,6 +38,7 @@ reproductions/SLCFormer_ZernikeVAE/
 │   ├── synth.py             # 端到端合成器（高层 API）
 │   └── utils.py             # I/O、夜景背景/光源生成、热力图、拼图
 ├── scripts/
+│   ├── generate_dataset.py  # 批量生成数据集（input/target/flare/mask + meta.csv）
 │   ├── demo_psf_gallery.py  # 可视化 Zernike 模式与各类像差 PSF
 │   ├── demo_synthesize.py   # 合成训练对 + 复现 Fig.1（均匀 vs 空间可变）
 │   ├── build_p2s_basis.py   # 构建并评估 P2S 基（保真度/对比）
@@ -80,6 +81,33 @@ pair = synth.synthesize(np.random.default_rng(0))   # 也可传入真实背景 b
 # pair['target'] : 去眩光 GT（保留光源）
 # pair['raw_flare'], pair['flare_mask'], pair['kernel_size_map'], ...
 ```
+
+### 批量生成数据集 & 需要手工补充什么
+
+**核心结论：开箱即用，零外部资源即可跑通。** 眩光、PSF、光源全部由物理（Zernike+傅里叶光学）现场生成，**不依赖 Flare7K 的任何眩光模板**；背景缺省用内置的合成夜景。所以最小用法只需 `pip install -r requirements.txt`：
+
+```bash
+# 零资源冒烟跑：合成背景，产出 input/target/flare/mask + meta.csv
+python scripts/generate_dataset.py --num 20 --out data/demo --save-flare --save-mask
+```
+
+**要产出"可用于训练"的真实数据，唯一推荐手工补充的是真实背景图**（论文/Flare7K 用的就是这个）：
+
+```bash
+python scripts/generate_dataset.py --backgrounds /path/to/flickr24k \
+    --num 5000 --size 512 --out data/train --save-flare --save-mask
+```
+
+| 资源 | 是否必须 | 怎么获取 | 说明 |
+|---|---|---|---|
+| Python 依赖 | **必须** | `pip install -r requirements.txt` | numpy/scipy/pillow/matplotlib/tqdm/torch |
+| 真实背景图（Flickr-24K） | **强烈推荐** | Flare7K 官方仓库 [ykdai/Flare7K](https://github.com/ykdai/Flare7K) 提供 24K Flickr 背景下载；也可用任意干净照片文件夹 | 不给则回退到内置合成夜景，仅供跑通 |
+| 眩光/PSF 模板 | 不需要 | —— | 本管线从物理生成，这正是复现的重点 |
+| P2S 基字典 | 可选 | `python scripts/build_p2s_basis.py`（本地构建，无需下载） | 仅 Eq.6 加速路径用 |
+| ZernikeVAE 权重 | 可选 | `python scripts/train_vae.py` 自行训练（无预训练权重可下） | VAE 只是精修步骤，核心合成不依赖它 |
+| Flare7K++ 测试集 | 仅评测用 | [ykdai/Flare7K](https://github.com/ykdai/Flare7K) | 若要和论文指标对比才需要 |
+
+> 产出目录为 Flare7K 风格：`<out>/{input,target,flare,mask}/00000.png` + `meta.csv`（记录每张的背景文件/gamma/seed）。`input` 为含眩光输入、`target` 为去眩光且保留光源的 GT，可直接喂给任意去眩光网络（Uformer/Restormer/SLCFormer…）。
 
 ---
 
